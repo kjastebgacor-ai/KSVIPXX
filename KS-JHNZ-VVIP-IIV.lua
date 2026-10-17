@@ -465,26 +465,70 @@ p.CharacterAdded:Connect(function()
     end
 end)
 
--- BALL SCANNER
+-- BALL SCANNER FIX
+-- Prioritaskan bola fisik, abaikan props/dekorasi
+
 local balls = {}
 local scanning = false
 local scanId = 0
 local target = nil
 local camConn = nil
 
+local function isValidBall(v)
+    if not v:IsA("BasePart") then
+        return false
+    end
+
+    local n = v.Name:lower()
+
+    -- Nama yang mengindikasikan bola
+    local nameMatch =
+        n == "ball"
+        or n == "soccerball"
+        or n == "soccer_ball"
+        or n == "football"
+        or n == "footballball"
+        or n == "bola"
+        or n == "soccer"
+        or n:match("^ball%d+$")
+        or n:match("^bola%d+$")
+
+    if not nameMatch then
+        return false
+    end
+
+    -- Abaikan bagian yang berada di dalam karakter pemain
+    if v:FindFirstAncestorOfClass("Accessory") then
+        return false
+    end
+
+    if v:FindFirstAncestorOfClass("Tool") then
+        return false
+    end
+
+    -- Abaikan bola yang terlalu kecil atau terlalu besar
+    local size = v.Size
+    local maxSize = math.max(size.X, size.Y, size.Z)
+    local minSize = math.min(size.X, size.Y, size.Z)
+
+    if maxSize < 0.5 or maxSize > 12 or minSize < 0.3 then
+        return false
+    end
+
+    -- Bola fisik biasanya punya collision atau bergerak
+    if not v.CanCollide and v.Anchored then
+        return false
+    end
+
+    return true
+end
+
 local function findBalls()
     local found = {}
 
     for _, v in ipairs(W:GetDescendants()) do
-        if v:IsA("BasePart") then
-            local n = v.Name:lower()
-
-            if n:find("ball")
-                or n:find("soccer")
-                or n:find("football")
-                or n:find("bola") then
-                table.insert(found, v)
-            end
+        if isValidBall(v) then
+            table.insert(found, v)
         end
     end
 
@@ -495,15 +539,21 @@ end
 local function nearestBall()
     local found = findBalls()
     local _, root = character()
-    local best, distance = nil, math.huge
+
+    if not root then
+        return nil
+    end
+
+    local best = nil
+    local distance = math.huge
 
     for _, v in ipairs(found) do
         if v.Parent then
-            local d = root and
-                (v.Position - root.Position).Magnitude or 0
+            local d = (v.Position - root.Position).Magnitude
 
             if d < distance then
-                best, distance = v, d
+                best = v
+                distance = d
             end
         end
     end
@@ -524,6 +574,7 @@ local function stopCamera()
 
     if cam then
         cam.CameraType = Enum.CameraType.Custom
+
         if hum then
             cam.CameraSubject = hum
         end
@@ -550,9 +601,13 @@ local function startCamera()
 
         if not cam or not root then return end
 
-        if not target or not target.Parent then return end
+        if not target or not target.Parent then
+            target = nearestBall()
+            if not target then return end
+        end
 
-        local origin = root.Position
+        local origin =
+            root.Position
             - root.CFrame.LookVector * 8
             + Vector3.new(0, 4, 0)
 
@@ -562,6 +617,48 @@ local function startCamera()
 
     return true
 end
+
+btn("SCAN BALL / CAMERA: OFF", function(b)
+    scanning = not scanning
+    scanId += 1
+
+    local id = scanId
+
+    if not scanning then
+        stopCamera()
+        b.Text = "SCAN BALL / CAMERA: OFF"
+        return
+    end
+
+    local found = findBalls()
+    print("Bola fisik ditemukan:", #found)
+
+    if not startCamera() then
+        scanning = false
+        b.Text = "BALL NOT FOUND"
+        return
+    end
+
+    b.Text = "CHARACTER POV: ON"
+
+    task.spawn(function()
+        while scanning and scanId == id do
+            task.wait(1)
+
+            if not scanning or scanId ~= id then
+                break
+            end
+
+            if not target or not target.Parent then
+                target = nearestBall()
+            end
+
+            b.Text = target
+                and "CHARACTER POV: ON"
+                or "BALL NOT FOUND"
+        end
+    end)
+end, 2)
 
 btn("SCAN BALL / CAMERA: OFF", function(b)
     scanning = not scanning
