@@ -632,6 +632,64 @@ btn("SCAN BALL / CAMERA: OFF", function(b)
     end)
 end, 2)
 
+-- SPRINT SYSTEM | SPEED +1 / -1
+local sprint = false
+local sprintSpeed = 32
+local defaultSpeed = 16
+
+local function applySprint()
+    local c = p.Character
+    local hum = c and c:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    hum.WalkSpeed = sprint and sprintSpeed or defaultSpeed
+end
+
+local sprintBtn
+
+sprintBtn = btn("SPRINT: OFF [32]", function(b)
+    sprint = not sprint
+    applySprint()
+
+    b.Text = "SPRINT: " ..
+        (sprint and "ON" or "OFF") ..
+        " [" .. sprintSpeed .. "]"
+end, 2)
+
+btn("SPEED +1", function()
+    sprintSpeed = math.clamp(sprintSpeed + 1, 16, 100)
+    if sprint then applySprint() end
+
+    sprintBtn.Text = "SPRINT: " ..
+        (sprint and "ON" or "OFF") ..
+        " [" .. sprintSpeed .. "]"
+end, 2)
+
+btn("SPEED -1", function()
+    sprintSpeed = math.clamp(sprintSpeed - 1, 16, 100)
+    if sprint then applySprint() end
+
+    sprintBtn.Text = "SPRINT: " ..
+        (sprint and "ON" or "OFF") ..
+        " [" .. sprintSpeed .. "]"
+end, 2)
+
+btn("RESET SPEED", function()
+    sprintSpeed = 32
+    if sprint then applySprint() end
+
+    sprintBtn.Text = "SPRINT: " ..
+        (sprint and "ON" or "OFF") ..
+        " [" .. sprintSpeed .. "]"
+end, 2)
+
+p.CharacterAdded:Connect(function(c)
+    local hum = c:WaitForChild("Humanoid", 10)
+    if hum then
+        hum.WalkSpeed = sprint and sprintSpeed or defaultSpeed
+    end
+end)
+
 -- BALL SLOW MOTION DETECTOR
 -- Tidak mengubah kamera atau fisika bola
 local slowVisual = false
@@ -761,7 +819,7 @@ end)
 -- FPS TRACKER
 local labelFPS = Instance.new("TextLabel")
 labelFPS.Size = UDim2.fromOffset(100, 24)
-labelFPS.Position = UDim2.new(0, 15, 0, 300)
+labelFPS.Position = UDim2.new(0, 15, 0, 200)
 labelFPS.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 labelFPS.TextColor3 = Color3.fromRGB(0, 255, 160)
 labelFPS.Font = Enum.Font.GothamBold
