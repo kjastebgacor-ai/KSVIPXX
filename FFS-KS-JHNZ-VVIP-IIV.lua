@@ -617,7 +617,7 @@ btn("SCAN BALL / CAMERA: OFF", function(b)
 
     task.spawn(function()
         while scanning and scanId == id do
-            task.wait(0.1)
+            task.wait(1.5)
 
             if not scanning or scanId ~= id then break end
 
