@@ -1,4 +1,11 @@
--- K.S VIP XX | COMPACT EDITION 2 PAGE
+-- K.S JHNZ VVIP IIV | COMPACT EDITION 2 PAGE VIP XX | COMPACT EDITION 2 PAGE
+
+-- K.S JHNZ VVIP IIV | LOCAL KEY SYSTEM
+
+local KEY_CONFIG = {
+    Enabled = true,
+    Key = "KS-JHNZ-3686"
+}
 
 local P = game:GetService("Players")
 local L = game:GetService("Lighting")
@@ -10,6 +17,98 @@ local p = P.LocalPlayer
 if not p then return end
 
 local g = p:WaitForChild("PlayerGui")
+
+-- LOCAL KEY VERIFICATION
+
+if KEY_CONFIG.Enabled then
+    local keyGui = Instance.new("ScreenGui")
+    keyGui.Name = "KSVIPXXKeySystem"
+    keyGui.ResetOnSpawn = false
+    keyGui.DisplayOrder = 10000
+    keyGui.Parent = g
+
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.fromOffset(280, 180)
+    frame.Position = UDim2.new(0.5, -140, 0.5, -90)
+    frame.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+    frame.Parent = keyGui
+
+    Instance.new("UICorner", frame).CornerRadius =
+        UDim.new(0, 10)
+
+    local title = Instance.new("TextLabel")
+    title.Size = UDim2.new(1, 0, 0, 40)
+    title.BackgroundColor3 = Color3.fromRGB(0, 100, 70)
+    title.Text = "K.S JHNZ VVIP IIV"
+    title.TextColor3 = Color3.new(1, 1, 1)
+    title.Font = Enum.Font.GothamBold
+    title.TextSize = 16
+    title.Parent = frame
+
+    local input = Instance.new("TextBox")
+    input.Size = UDim2.new(1, -24, 0, 38)
+    input.Position = UDim2.new(0, 12, 0, 52)
+    input.BackgroundColor3 = Color3.fromRGB(35, 40, 45)
+    input.PlaceholderText = "Masukkan key..."
+    input.Text = ""
+    input.TextColor3 = Color3.new(1, 1, 1)
+    input.Font = Enum.Font.Gotham
+    input.TextSize = 14
+    input.ClearTextOnFocus = false
+    input.Parent = frame
+
+    Instance.new("UICorner", input).CornerRadius =
+        UDim.new(0, 6)
+
+    local status = Instance.new("TextLabel")
+    status.Size = UDim2.new(1, -20, 0, 22)
+    status.Position = UDim2.new(0, 10, 0, 92)
+    status.BackgroundTransparency = 1
+    status.Text = ""
+    status.TextColor3 = Color3.fromRGB(255, 90, 90)
+    status.Font = Enum.Font.Gotham
+    status.TextSize = 12
+    status.Parent = frame
+
+    local verify = Instance.new("TextButton")
+    verify.Size = UDim2.new(1, -24, 0, 36)
+    verify.Position = UDim2.new(0, 12, 0, 126)
+    verify.BackgroundColor3 = Color3.fromRGB(0, 120, 80)
+    verify.Text = "VERIFY KEY"
+    verify.TextColor3 = Color3.new(1, 1, 1)
+    verify.Font = Enum.Font.GothamBold
+    verify.TextSize = 14
+    verify.Parent = frame
+
+    Instance.new("UICorner", verify).CornerRadius =
+        UDim.new(0, 6)
+
+    local verified = false
+
+    local function checkKey()
+        if verified then return end
+
+        if input.Text == KEY_CONFIG.Key then
+            verified = true
+            keyGui:Destroy()
+        else
+            status.Text = "KEY SALAH! COBA LAGI."
+            input.Text = ""
+        end
+    end
+
+    verify.Activated:Connect(checkKey)
+
+    input.FocusLost:Connect(function(enterPressed)
+        if enterPressed then
+            checkKey()
+        end
+    end)
+
+    repeat
+        task.wait()
+    until verified
+end
 
 for _, n in ipairs({"KSVIPXXGlobal", "KSVIPXXToggle"}) do
     local o = g:FindFirstChild(n)
@@ -33,7 +132,7 @@ Instance.new("UICorner", m).CornerRadius = UDim.new(0, 10)
 
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 38)
-title.Text = "K.S VIP XX"
+title.Text = "K.S JHNZ VVIP IIV"
 title.TextColor3 = Color3.new(1, 1, 1)
 title.BackgroundColor3 = Color3.fromRGB(0, 100, 70)
 title.Font = Enum.Font.GothamBold
@@ -465,24 +564,42 @@ p.CharacterAdded:Connect(function()
     end
 end)
 
--- BALL SCANNER
+-- BALL SCANNER: PRIORITAS BOLA PERMAINAN
 local balls = {}
 local scanning = false
 local scanId = 0
 local target = nil
 local camConn = nil
 
+local function isInsideToolOrAccessory(obj)
+    local parent = obj.Parent
+    while parent and parent ~= W do
+        if parent:IsA("Tool") or parent:IsA("Accessory") then
+            return true
+        end
+        parent = parent.Parent
+    end
+    return false
+end
+
 local function findBalls()
     local found = {}
 
     for _, v in ipairs(W:GetDescendants()) do
-        if v:IsA("BasePart") then
+        if v:IsA("BasePart") and not isInsideToolOrAccessory(v) then
             local n = v.Name:lower()
+            local namedBall =
+                n:find("ball") or
+                n:find("soccer") or
+                n:find("football") or
+                n:find("bola")
 
-            if n:find("ball")
-                or n:find("soccer")
-                or n:find("football")
-                or n:find("bola") then
+            local size = v.Size
+            local roundSize =
+                math.max(size.X, size.Y, size.Z) <=
+                math.min(size.X, size.Y, size.Z) * 1.6
+
+            if namedBall and roundSize then
                 table.insert(found, v)
             end
         end
@@ -495,15 +612,24 @@ end
 local function nearestBall()
     local found = findBalls()
     local _, root = character()
-    local best, distance = nil, math.huge
+
+    if not root then
+        return found[1]
+    end
+
+    local best, bestScore = nil, math.huge
 
     for _, v in ipairs(found) do
         if v.Parent then
-            local d = root and
-                (v.Position - root.Position).Magnitude or 0
+            local distance = (v.Position - root.Position).Magnitude
+            local velocity = v.AssemblyLinearVelocity.Magnitude
 
-            if d < distance then
-                best, distance = v, d
+            -- Bola yang bergerak mendapat prioritas kecil.
+            local score = distance - math.min(velocity, 30) * 0.5
+
+            if score < bestScore then
+                bestScore = score
+                best = v
             end
         end
     end
@@ -520,7 +646,7 @@ local function stopCamera()
     target = nil
 
     local cam = W.CurrentCamera
-    local hum = character()
+    local hum, _ = character()
 
     if cam then
         cam.CameraType = Enum.CameraType.Custom
@@ -550,9 +676,13 @@ local function startCamera()
 
         if not cam or not root then return end
 
-        if not target or not target.Parent then return end
+        if not target or not target.Parent then
+            target = nearestBall()
+            if not target then return end
+        end
 
-        local origin = root.Position
+        local origin =
+            root.Position
             - root.CFrame.LookVector * 8
             + Vector3.new(0, 4, 0)
 
@@ -582,25 +712,82 @@ btn("SCAN BALL / CAMERA: OFF", function(b)
         return
     end
 
-    b.Text = "CHARACTER POV: ON"
+    b.Text = "BALL POV: ON"
 
     task.spawn(function()
         while scanning and scanId == id do
-            task.wait(2)
+            task.wait(1.5)
 
             if not scanning or scanId ~= id then break end
 
             local nextBall = nearestBall()
 
-            if not target or not target.Parent then
+            if nextBall then
                 target = nextBall
             end
 
-            b.Text = target and "CHARACTER POV: ON"
-                or "BALL NOT FOUND"
+            b.Text = target and "BALL POV: ON" or "BALL NOT FOUND"
         end
     end)
 end, 2)
+
+-- SPRINT SYSTEM | SPEED +1 / -1
+local sprint = false
+local sprintSpeed = 32
+local defaultSpeed = 16
+
+local function applySprint()
+    local c = p.Character
+    local hum = c and c:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
+
+    hum.WalkSpeed = sprint and sprintSpeed or defaultSpeed
+end
+
+local sprintBtn
+
+sprintBtn = btn("SPRINT: OFF [32]", function(b)
+    sprint = not sprint
+    applySprint()
+
+    b.Text = "SPRINT: " ..
+        (sprint and "ON" or "OFF") ..
+        " [" .. sprintSpeed .. "]"
+end, 2)
+
+btn("SPEED +1", function()
+    sprintSpeed = math.clamp(sprintSpeed + 1, 16, 100)
+    if sprint then applySprint() end
+
+    sprintBtn.Text = "SPRINT: " ..
+        (sprint and "ON" or "OFF") ..
+        " [" .. sprintSpeed .. "]"
+end, 2)
+
+btn("SPEED -1", function()
+    sprintSpeed = math.clamp(sprintSpeed - 1, 16, 100)
+    if sprint then applySprint() end
+
+    sprintBtn.Text = "SPRINT: " ..
+        (sprint and "ON" or "OFF") ..
+        " [" .. sprintSpeed .. "]"
+end, 2)
+
+btn("RESET SPEED", function()
+    sprintSpeed = 32
+    if sprint then applySprint() end
+
+    sprintBtn.Text = "SPRINT: " ..
+        (sprint and "ON" or "OFF") ..
+        " [" .. sprintSpeed .. "]"
+end, 2)
+
+p.CharacterAdded:Connect(function(c)
+    local hum = c:WaitForChild("Humanoid", 10)
+    if hum then
+        hum.WalkSpeed = sprint and sprintSpeed or defaultSpeed
+    end
+end)
 
 -- BALL SLOW MOTION DETECTOR
 -- Tidak mengubah kamera atau fisika bola
@@ -668,92 +855,4 @@ k.Text = "K"
 k.TextSize = 22
 k.Font = Enum.Font.GothamBold
 k.TextColor3 = Color3.new(1, 1, 1)
-k.BackgroundColor3 = Color3.fromRGB(0, 120, 80)
-k.Active = true
-k.Parent = tg
-Instance.new("UICorner", k).CornerRadius = UDim.new(1, 0)
-
-local drag, moved, start, pos, active =
-    false, false, nil, nil, nil
-
-k.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.Touch
-        or i.UserInputType == Enum.UserInputType.MouseButton1 then
-
-        drag = true
-        moved = false
-        start = i.Position
-        pos = k.Position
-        active = i.UserInputType == Enum.UserInputType.Touch
-            and i or nil
-    end
-end)
-
-U.InputChanged:Connect(function(i)
-    if not drag or not start then return end
-
-    if i.UserInputType == Enum.UserInputType.MouseMovement
-        or (i.UserInputType == Enum.UserInputType.Touch
-        and (not active or i == active)) then
-
-        local d = i.Position - start
-
-        if d.Magnitude > 8 then moved = true end
-
-        if moved then
-            k.Position = UDim2.new(
-                pos.X.Scale, pos.X.Offset + d.X,
-                pos.Y.Scale, pos.Y.Offset + d.Y
-            )
-        end
-    end
-end)
-
-U.InputEnded:Connect(function(i)
-    if not drag then return end
-
-    if i.UserInputType == Enum.UserInputType.MouseButton1
-        or (i.UserInputType == Enum.UserInputType.Touch
-        and (not active or i == active)) then
-
-        drag = false
-        active = nil
-
-        if not moved then
-            gui.Enabled = not gui.Enabled
-        end
-
-        start = nil
-        pos = nil
-    end
-end)
-
--- FPS TRACKER
-local labelFPS = Instance.new("TextLabel")
-labelFPS.Size = UDim2.fromOffset(100, 24)
-labelFPS.Position = UDim2.new(0, 15, 0, 300)
-labelFPS.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-labelFPS.TextColor3 = Color3.fromRGB(0, 255, 160)
-labelFPS.Font = Enum.Font.GothamBold
-labelFPS.TextSize = 13
-labelFPS.Text = "FPS: ..."
-labelFPS.Parent = tg
-
-local frames, last = 0, os.clock()
-
-R.RenderStepped:Connect(function()
-    frames += 1
-    local now = os.clock()
-
-    if now - last >= 1 then
-        labelFPS.Text = "FPS: " .. frames
-        frames = 0
-        last = now
-        showBright()
-    end
-end)
-
-setPage(1)
-showBright()
-
-print("K.S VIP XX Compact Edition 2 Page loaded!")
+k.BackgroundColor3 
