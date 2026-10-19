@@ -668,8 +668,102 @@ local function startCamera()
         camConn = nil
     end
 
-    W.CurrentCamera.CameraType = Enum.CameraType.Scriptable
+local cameraYaw = 0
+local cameraPitch = math.rad(-15)
+local cameraDistance = 10
+local lastTouchPosition = nil
+local cameraDragging = false
 
+local function startCamera()
+    target = nearestBall()
+
+    if not target or not W.CurrentCamera then
+        return false
+    end
+
+    if camConn then
+        camConn:Disconnect()
+        camConn = nil
+    end
+
+    local cam = W.CurrentCamera
+    local _, root = character()
+
+    if root then
+        local offset = root.Position - target.Position
+        cameraYaw = math.atan2(offset.X, offset.Z)
+    end
+
+    cameraPitch = math.rad(-15)
+    cameraDistance = 10
+
+    cam.CameraType = Enum.CameraType.Scriptable
+
+    camConn = R.RenderStepped:Connect(function()
+        local camera = W.CurrentCamera
+
+        if not camera then return end
+
+        if not target or not target.Parent then
+            target = nearestBall()
+            if not target then return end
+        end
+
+        local focus = target.Position
+        local horizontalDistance =
+            cameraDistance * math.cos(cameraPitch)
+
+        local offset = Vector3.new(
+            math.sin(cameraYaw) * horizontalDistance,
+            cameraDistance * math.sin(-cameraPitch),
+            math.cos(cameraYaw) * horizontalDistance
+        )
+
+        camera.CameraType = Enum.CameraType.Scriptable
+        camera.CFrame = CFrame.lookAt(
+            focus + offset,
+            focus
+        )
+    end)
+
+    return true
+end
+
+-- MOUSE / TOUCH CAMERA CONTROL
+U.InputChanged:Connect(function(input)
+    if not scanning then return end
+
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        if U:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
+            cameraYaw -= input.Delta.X * 0.005
+            cameraPitch = math.clamp(
+                cameraPitch - input.Delta.Y * 0.005,
+                math.rad(-75),
+                math.rad(75)
+            )
+        end
+
+    elseif input.UserInputType == Enum.UserInputType.Touch then
+        if lastTouchPosition then
+            local delta = input.Position - lastTouchPosition
+
+            cameraYaw -= delta.X * 0.005
+            cameraPitch = math.clamp(
+                cameraPitch - delta.Y * 0.005,
+                math.rad(-75),
+                math.rad(75)
+            )
+        end
+
+        lastTouchPosition = input.Position
+    end
+end)
+
+U.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.Touch then
+        lastTouchPosition = nil
+    end
+end)
     camConn = R.RenderStepped:Connect(function()
         local cam = W.CurrentCamera
         local _, root = character()
