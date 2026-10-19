@@ -411,7 +411,7 @@ local savedEffects = {}
 
 local function disableEffect(obj)
     if obj:IsA("ParticleEmitter")
-        or obj:IsA("Trail")
+        or obj:IsTrail")
         or obj:IsA("Beam")
         or obj:IsA("Fire")
         or obj:IsA("Smoke")
@@ -589,8 +589,7 @@ local function findBalls()
         if v:IsA("BasePart") and not isInsideToolOrAccessory(v) then
             local n = v.Name:lower()
             local namedBall =
-             n:find("soccer") or
-             n:find("bola")
+              n:find("bola")
             
             local size = v.Size
             local roundSize =
