@@ -589,7 +589,8 @@ local function findBalls()
         if v:IsA("BasePart") and not isInsideToolOrAccessory(v) then
             local n = v.Name:lower()
             local namedBall =
-                n:find("Soccer Ball")
+                n:find("soccer ball") or
+                n:find("ball")
 
             local size = v.Size
             local roundSize =
