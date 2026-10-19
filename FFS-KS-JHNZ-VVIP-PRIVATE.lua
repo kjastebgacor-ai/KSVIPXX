@@ -659,19 +659,12 @@ end
 local function startCamera()
     target = nearestBall()
 
-    if not target or not W.CurrentCamera then
-        return false
-    end
-
 local cameraYaw = 0
 local cameraPitch = math.rad(-15)
 local cameraDistance = 10
 local lastTouchPosition = nil
 local cameraDragging = false
-
-local function startCamera()
-    target = nearestBall()
-
+    
     if not target or not W.CurrentCamera then
         return false
     end
