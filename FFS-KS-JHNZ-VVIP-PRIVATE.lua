@@ -656,15 +656,13 @@ local function stopCamera()
     end
 end
 
+local cameraYaw = 0
+local cameraPitch = math.rad(15)
+local cameraDistance = 10
+
 local function startCamera()
     target = nearestBall()
 
-local cameraYaw = 0
-local cameraPitch = math.rad(-15)
-local cameraDistance = 10
-local lastTouchPosition = nil
-local cameraDragging = false
-    
     if not target or not W.CurrentCamera then
         return false
     end
@@ -678,12 +676,11 @@ local cameraDragging = false
     local _, root = character()
 
     if root then
-        local offset = root.Position - target.Position
-        cameraYaw = math.atan2(offset.X, offset.Z)
+        local direction = root.Position - target.Position
+        cameraYaw = math.atan2(direction.X, direction.Z)
     end
 
-    cameraPitch = math.rad(-15)
-    cameraDistance = 10
+    cameraPitch = math.rad(15)
 
     cam.CameraType = Enum.CameraType.Scriptable
 
@@ -698,13 +695,12 @@ local cameraDragging = false
         end
 
         local focus = target.Position
-        local horizontalDistance =
-            cameraDistance * math.cos(cameraPitch)
+        local horizontal = cameraDistance * math.cos(cameraPitch)
 
         local offset = Vector3.new(
-            math.sin(cameraYaw) * horizontalDistance,
-            cameraDistance * math.sin(-cameraPitch),
-            math.cos(cameraYaw) * horizontalDistance
+            math.sin(cameraYaw) * horizontal,
+            cameraDistance * math.sin(cameraPitch),
+            math.cos(cameraYaw) * horizontal
         )
 
         camera.CameraType = Enum.CameraType.Scriptable
@@ -752,8 +748,6 @@ U.InputEnded:Connect(function(input)
         lastTouchPosition = nil
     end
 end)
-
-btn("SCAN BALL / CAMERA: OFF", function(b)
 
     W.CurrentCamera.CameraType = Enum.CameraType.Scriptable
 
