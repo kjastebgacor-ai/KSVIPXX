@@ -590,7 +590,7 @@ local function findBalls()
             local n = v.Name:lower()
             local namedBall =
                 n:find("ball") or 
-                n:find("football")
+                n:find("soccer")
 
             local size = v.Size
             local roundSize =
