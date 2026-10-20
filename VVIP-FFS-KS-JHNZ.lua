@@ -716,8 +716,350 @@ btn("SCAN BALL / CAMERA: OFF", function(b)
     task.spawn(function()
         while scanning and scanId == id do
             task.wait(1.5)
+-- BALL SCANNER + MANUAL CAMERA
+-- KS KING | Brookhaven
+-- Membutuhkan W, R, character(), dan btn() dari script utama
 
-            if not scanning or scanId ~= id then break end
+local balls = {}
+local scanning = false
+local scanId = 0
+local target = nil
+local camConn = nil
+
+local U = game:GetService("UserInputService")
+
+local touchBeganConn = nil
+local touchMovedConn = nil
+local touchEndedConn = nil
+
+local yaw = 0
+local pitch = 0
+local sensitivity = 0.005
+local touchStart = nil
+local dragging = false
+
+-- DETEKSI TOOL / ACCESSORY
+
+local function isInsideToolOrAccessory(obj)
+    local parent = obj.Parent
+
+    while parent and parent ~= W do
+        if parent:IsA("Tool")
+        or parent:IsA("Accessory") then
+            return true
+        end
+
+        parent = parent.Parent
+    end
+
+    return false
+end
+
+-- SCAN BOLA
+
+local function findBalls()
+    local found = {}
+
+    for _, v in ipairs(W:GetDescendants()) do
+        if v:IsA("BasePart")
+        and not isInsideToolOrAccessory(v) then
+
+            local n = v.Name:lower()
+
+            local namedBall =
+                n:find("bola")
+                or n:find("soccer")
+                or n:find("football")
+
+            local size = v.Size
+
+            local minSize = math.min(
+                size.X,
+                size.Y,
+                size.Z
+            )
+
+            local maxSize = math.max(
+                size.X,
+                size.Y,
+                size.Z
+            )
+
+            local roundSize =
+                minSize > 0
+                and maxSize <= minSize * 1.6
+
+            if namedBall and roundSize then
+                table.insert(found, v)
+            end
+        end
+    end
+
+    balls = found
+
+    return found
+end
+
+-- MENCARI BOLA TERDEKAT
+
+local function nearestBall()
+    local found = findBalls()
+    local _, root = character()
+
+    if not root then
+        return found[1]
+    end
+
+    local best = nil
+    local bestScore = math.huge
+
+    for _, v in ipairs(found) do
+        if v.Parent then
+            local distance =
+                (v.Position - root.Position).Magnitude
+
+            local velocity =
+                v.AssemblyLinearVelocity.Magnitude
+
+            -- Bola bergerak mendapat prioritas kecil.
+            local score =
+                distance - math.min(velocity, 30) * 0.5
+
+            if score < bestScore then
+                bestScore = score
+                best = v
+            end
+        end
+    end
+
+    return best
+end
+
+-- MEMBERSIHKAN KONTROL SENTUH
+
+local function disconnectTouch()
+    if touchBeganConn then
+        touchBeganConn:Disconnect()
+        touchBeganConn = nil
+    end
+
+    if touchMovedConn then
+        touchMovedConn:Disconnect()
+        touchMovedConn = nil
+    end
+
+    if touchEndedConn then
+        touchEndedConn:Disconnect()
+        touchEndedConn = nil
+    end
+
+    touchStart = nil
+    dragging = false
+end
+
+-- MEMATIKAN KAMERA
+
+local function stopCamera()
+    if camConn then
+        camConn:Disconnect()
+        camConn = nil
+    end
+
+    disconnectTouch()
+
+    target = nil
+
+    local cam = W.CurrentCamera
+    local hum = character()
+
+    if cam then
+        cam.CameraType = Enum.CameraType.Custom
+
+        if hum then
+            cam.CameraSubject = hum
+        end
+    end
+end
+
+-- MENGAKTIFKAN BALL POV + KAMERA MANUAL
+
+local function startCamera()
+    target = nearestBall()
+
+    if not target or not W.CurrentCamera then
+        return false
+    end
+
+    local _, root = character()
+
+    if not root then
+        return false
+    end
+
+    -- Bersihkan koneksi sebelumnya.
+    if camConn then
+        camConn:Disconnect()
+        camConn = nil
+    end
+
+    disconnectTouch()
+
+    -- Arah awal kamera menuju bola.
+    local offset = target.Position - root.Position
+
+    if offset.Magnitude > 0 then
+        local direction = offset.Unit
+
+        yaw = math.atan2(
+            -direction.X,
+            -direction.Z
+        )
+
+        pitch = math.asin(
+            math.clamp(direction.Y, -1, 1)
+        )
+    else
+        yaw = 0
+        pitch = 0
+    end
+
+    pitch = math.clamp(
+        pitch,
+        math.rad(-80),
+        math.rad(80)
+    )
+
+    W.CurrentCamera.CameraType =
+        Enum.CameraType.Scriptable
+
+    -- SENTUHAN LAYAR UNTUK MENGGERAKKAN KAMERA
+
+    touchBeganConn = U.TouchStarted:Connect(
+        function(input, processed)
+            if processed then
+                return
+            end
+
+            touchStart = input.Position
+            dragging = true
+        end
+    )
+
+    touchMovedConn = U.TouchMoved:Connect(
+        function(input, processed)
+            if not dragging or not touchStart then
+                return
+            end
+
+            local delta =
+                input.Position - touchStart
+
+            touchStart = input.Position
+
+            yaw = yaw - delta.X * sensitivity
+
+            pitch = math.clamp(
+                pitch - delta.Y * sensitivity,
+                math.rad(-80),
+                math.rad(80)
+            )
+        end
+    )
+
+    touchEndedConn = U.TouchEnded:Connect(
+        function()
+            dragging = false
+            touchStart = nil
+        end
+    )
+
+    -- UPDATE KAMERA SETIAP FRAME
+
+    camConn = R.RenderStepped:Connect(
+        function()
+            local cam = W.CurrentCamera
+            local _, currentRoot = character()
+
+            if not cam or not currentRoot then
+                return
+            end
+
+            -- Cari target baru jika bola hilang.
+            if not target or not target.Parent then
+                target = nearestBall()
+
+                if not target then
+                    return
+                end
+            end
+
+            -- Posisi kamera di belakang karakter.
+            local origin =
+                currentRoot.Position
+                - currentRoot.CFrame.LookVector * 8
+                + Vector3.new(0, 4, 0)
+
+            -- Arah kamera dikendalikan sentuhan.
+            local direction = Vector3.new(
+                -math.sin(yaw) * math.cos(pitch),
+                math.sin(pitch),
+                -math.cos(yaw) * math.cos(pitch)
+            )
+
+            cam.CameraType =
+                Enum.CameraType.Scriptable
+
+            cam.CFrame = CFrame.lookAt(
+                origin,
+                origin + direction
+            )
+        end
+    )
+
+    return true
+end
+
+-- TOMBOL SCAN BALL / CAMERA
+
+btn("SCAN BALL / CAMERA: OFF", function(b)
+    scanning = not scanning
+
+    scanId += 1
+
+    local id = scanId
+
+    if not scanning then
+        stopCamera()
+
+        b.Text = "SCAN BALL / CAMERA: OFF"
+
+        return
+    end
+
+    print(
+        "Bola ditemukan:",
+        #findBalls()
+    )
+
+    if not startCamera() then
+        scanning = false
+
+        stopCamera()
+
+        b.Text = "BALL NOT FOUND"
+
+        return
+    end
+
+    b.Text = "BALL POV: ON"
+
+    task.spawn(function()
+        while scanning and scanId == id do
+            task.wait(1.5)
+
+            if not scanning or scanId ~= id then
+                break
+            end
 
             local nextBall = nearestBall()
 
@@ -725,7 +1067,11 @@ btn("SCAN BALL / CAMERA: OFF", function(b)
                 target = nextBall
             end
 
-            b.Text = target and "BALL POV: ON" or "BALL NOT FOUND"
+            if target and target.Parent then
+                b.Text = "BALL POV: ON"
+            else
+                b.Text = "BALL NOT FOUND"
+            end
         end
     end)
 end, 2)
