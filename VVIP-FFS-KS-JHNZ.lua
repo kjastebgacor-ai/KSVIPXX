@@ -4,7 +4,7 @@
 
 local KEY_CONFIG = {
     Enabled = true,
-    Key = "KS-JHNZ-3528"
+    Key = "KS-JHNZ-7827"
 }
 
 local P = game:GetService("Players")
@@ -411,7 +411,7 @@ local savedEffects = {}
 
 local function disableEffect(obj)
     if obj:IsA("ParticleEmitter")
-        or obj:IsTrail")
+        or obj:IsA("Trail")
         or obj:IsA("Beam")
         or obj:IsA("Fire")
         or obj:IsA("Smoke")
@@ -589,9 +589,10 @@ local function findBalls()
         if v:IsA("BasePart") and not isInsideToolOrAccessory(v) then
             local n = v.Name:lower()
             local namedBall =
-                n:find("ball") or
-                n:find("bola")
-            
+                n:find("bola") or 
+                n:find("soccer") or 
+                n:find("football") 
+
             local size = v.Size
             local roundSize =
                 math.max(size.X, size.Y, size.Z) <=
@@ -854,91 +855,3 @@ k.TextSize = 22
 k.Font = Enum.Font.GothamBold
 k.TextColor3 = Color3.new(1, 1, 1)
 k.BackgroundColor3 = Color3.fromRGB(0, 120, 80)
-k.Active = true
-k.Parent = tg
-Instance.new("UICorner", k).CornerRadius = UDim.new(1, 0)
-
-local drag, moved, start, pos, active =
-    false, false, nil, nil, nil
-
-k.InputBegan:Connect(function(i)
-    if i.UserInputType == Enum.UserInputType.Touch
-        or i.UserInputType == Enum.UserInputType.MouseButton1 then
-
-        drag = true
-        moved = false
-        start = i.Position
-        pos = k.Position
-        active = i.UserInputType == Enum.UserInputType.Touch
-            and i or nil
-    end
-end)
-
-U.InputChanged:Connect(function(i)
-    if not drag or not start then return end
-
-    if i.UserInputType == Enum.UserInputType.MouseMovement
-        or (i.UserInputType == Enum.UserInputType.Touch
-        and (not active or i == active)) then
-
-        local d = i.Position - start
-
-        if d.Magnitude > 8 then moved = true end
-
-        if moved then
-            k.Position = UDim2.new(
-                pos.X.Scale, pos.X.Offset + d.X,
-                pos.Y.Scale, pos.Y.Offset + d.Y
-            )
-        end
-    end
-end)
-
-U.InputEnded:Connect(function(i)
-    if not drag then return end
-
-    if i.UserInputType == Enum.UserInputType.MouseButton1
-        or (i.UserInputType == Enum.UserInputType.Touch
-        and (not active or i == active)) then
-
-        drag = false
-        active = nil
-
-        if not moved then
-            gui.Enabled = not gui.Enabled
-        end
-
-        start = nil
-        pos = nil
-    end
-end)
-
--- FPS TRACKER
-local labelFPS = Instance.new("TextLabel")
-labelFPS.Size = UDim2.fromOffset(100, 24)
-labelFPS.Position = UDim2.new(0, 15, 0, 200)
-labelFPS.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
-labelFPS.TextColor3 = Color3.fromRGB(0, 255, 160)
-labelFPS.Font = Enum.Font.GothamBold
-labelFPS.TextSize = 13
-labelFPS.Text = "FPS: ..."
-labelFPS.Parent = tg
-
-local frames, last = 0, os.clock()
-
-R.RenderStepped:Connect(function()
-    frames += 1
-    local now = os.clock()
-
-    if now - last >= 1 then
-        labelFPS.Text = "FPS: " .. frames
-        frames = 0
-        last = now
-        showBright()
-    end
-end)
-
-setPage(1)
-showBright()
-
-print("K.S JHNZ VVIP IIV Compact Edition 2 Page loaded!")
