@@ -4,7 +4,7 @@
 
 local KEY_CONFIG = {
     Enabled = true,
-    Key = "KS-JHNZ-3528"
+    Key = "KS-JHNZ-PRIVATE"
 }
 
 local P = game:GetService("Players")
@@ -590,7 +590,7 @@ local function findBalls()
             local n = v.Name:lower()
             local namedBall =
                 n:find("ball") or 
-                n:find("bola")
+                n:find("football")
 
             local size = v.Size
             local roundSize =
