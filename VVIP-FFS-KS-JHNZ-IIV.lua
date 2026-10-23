@@ -730,6 +730,84 @@ btn("SCAN BALL / CAMERA: OFF", function(b)
     end)
 end, 2)
 
+-- ARCADE FONT + BLACK OUTLINE
+-- Integrated into K.S JHNZ VVIP IIV PAGE 2
+
+local fontEnabled = false
+local fontOriginals = {}
+
+local function isTextObject(obj)
+    return obj:IsA("TextLabel")
+        or obj:IsA("TextButton")
+        or obj:IsA("TextBox")
+end
+
+local function applyFont(obj)
+    if not isTextObject(obj) then
+        return
+    end
+
+    if fontOriginals[obj] == nil then
+        fontOriginals[obj] = {
+            Font = obj.Font,
+            StrokeTransparency = obj.TextStrokeTransparency,
+            StrokeColor = obj.TextStrokeColor3
+        }
+    end
+
+    pcall(function()
+        if fontEnabled then
+            obj.Font = Enum.Font.Arcade
+            obj.TextStrokeTransparency = 0
+            obj.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        else
+            obj.Font = Enum.Font.Arial
+            obj.TextStrokeTransparency = 1
+        end
+    end)
+end
+
+-- Font toggle masuk PAGE 2
+local fontButton
+
+fontButton = btn("FONT ARCADE: OFF", function(b)
+    fontEnabled = not fontEnabled
+
+    if fontEnabled then
+        b.Text = "FONT ARCADE: ON"
+        b.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+
+        for _, obj in ipairs(game:GetDescendants()) do
+            applyFont(obj)
+        end
+    else
+        b.Text = "FONT ARCADE: OFF"
+        b.BackgroundColor3 = Color3.fromRGB(35, 40, 45)
+
+        for obj, properties in pairs(fontOriginals) do
+            if obj.Parent then
+                pcall(function()
+                    obj.Font = Enum.Font.Arial
+                    obj.TextStrokeTransparency = 1
+                end)
+            end
+        end
+
+        table.clear(fontOriginals)
+    end
+end, 2)
+
+-- Terapkan Arcade ke GUI yang baru dibuat saat fitur aktif
+game.DescendantAdded:Connect(function(obj)
+    if fontEnabled then
+        task.defer(function()
+            if fontEnabled and obj.Parent then
+                applyFont(obj)
+            end
+        end)
+    end
+end)
+
 -- SPRINT SYSTEM | SPEED +1 / -1
 local sprint = false
 local sprintSpeed = 32
