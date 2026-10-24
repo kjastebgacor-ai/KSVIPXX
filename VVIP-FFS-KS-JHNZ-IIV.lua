@@ -808,6 +808,87 @@ game.DescendantAdded:Connect(function(obj)
     end
 end)
 
+-- LUCKIESTGUY FONT + BLACK OUTLINE
+-- Integrated into K.S JHNZ VVIP IIV PAGE 2
+
+local fontEnabled = false
+local fontOriginals = {}
+
+local function isTextObject(obj)
+    return obj:IsA("TextLabel")
+        or obj:IsA("TextButton")
+        or obj:IsA("TextBox")
+end
+
+local function applyFont(obj)
+    if not isTextObject(obj) then
+        return
+    end
+
+    if fontOriginals[obj] == nil then
+        fontOriginals[obj] = {
+            Font = obj.Font,
+            StrokeTransparency = obj.TextStrokeTransparency,
+            StrokeColor = obj.TextStrokeColor3
+        }
+    end
+
+    pcall(function()
+        if fontEnabled then
+            obj.Font = Enum.Font.LuckiestGuy
+            obj.TextStrokeTransparency = 0
+            obj.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        else
+            local original = fontOriginals[obj]
+            obj.Font = original.Font
+            obj.TextStrokeTransparency = original.StrokeTransparency
+            obj.TextStrokeColor3 = original.StrokeColor
+        end
+    end)
+end
+
+-- Font toggle masuk PAGE 2
+local fontButton
+
+fontButton = btn("FONT LUCKIESTGUY: OFF", function(b)
+    fontEnabled = not fontEnabled
+
+    if fontEnabled then
+        b.Text = "FONT LUCKIESTGUY: ON"
+        b.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+
+        for _, obj in ipairs(game:GetDescendants()) do
+            applyFont(obj)
+        end
+    else
+        b.Text = "FONT LUCKIESTGUY: OFF"
+        b.BackgroundColor3 = Color3.fromRGB(35, 40, 45)
+
+        for obj, properties in pairs(fontOriginals) do
+            if obj.Parent then
+                pcall(function()
+                    obj.Font = properties.Font
+                    obj.TextStrokeTransparency = properties.StrokeTransparency
+                    obj.TextStrokeColor3 = properties.StrokeColor
+                end)
+            end
+        end
+
+        table.clear(fontOriginals)
+    end
+end, 2)
+
+-- Terapkan font ke GUI baru saat fitur aktif
+game.DescendantAdded:Connect(function(obj)
+    if fontEnabled then
+        task.defer(function()
+            if fontEnabled and obj.Parent then
+                applyFont(obj)
+            end
+        end)
+    end
+end)
+
 -- SPRINT SYSTEM | SPEED +1 / -1
 local sprint = false
 local sprintSpeed = 32
