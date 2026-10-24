@@ -564,10 +564,6 @@ p.CharacterAdded:Connect(function()
     end
 end)
 
-
-
-    if not scanning then
-
 -- ARCADE FONT + BLACK OUTLINE
 -- Integrated into K.S JHNZ VVIP IIV PAGE 2
 
